@@ -1,0 +1,58 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>netstandard2.1</TargetFramework>
+    <AssemblyName>BlastSlimey.2hapezipelago</AssemblyName>
+    <Product>2hapezipelago</Product>
+    <Version>0.0.1</Version>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <LangVersion>latest</LangVersion>
+    <RestoreAdditionalProjectSources>
+      https://api.nuget.org/v3/index.json;
+      https://nuget.bepinex.dev/v3/index.json;
+      https://nuget.samboy.dev/v3/index.json
+    </RestoreAdditionalProjectSources>
+    <RootNamespace>_2hapezipelago</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Archipelago.MultiClient.Net" Version="6.5.0" />
+    <PackageReference Include="BepInEx.Analyzers" Version="1.*" PrivateAssets="all" />
+    <PackageReference Include="BepInEx.Core" Version="5.*" />
+    <PackageReference Include="BepInEx.PluginInfoProps" Version="2.*" />
+    <PackageReference Include="UnityEngine.Modules" Version="2022.3.43" IncludeAssets="compile" />
+  </ItemGroup>
+  
+  <ItemGroup Condition="'$(TargetFramework.TrimEnd(`0123456789`))' == 'net'">
+    <PackageReference Include="Microsoft.NETFramework.ReferenceAssemblies" Version="1.0.2" PrivateAssets="all" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Reference Include="ALINE">
+      <HintPath>lib\ALINE.dll</HintPath>
+    </Reference>
+    <Reference Include="lib/Autodesk.Fbx.dll" />
+    <Reference Include="lib/Core.dll" />
+    <Reference Include="lib/DemiLib.dll" />
+    <Reference Include="lib/DOT*.dll" />
+    <Reference Include="lib/Facepunch.Steamworks.Win64.dll" />
+    <Reference Include="lib/FbxBuildTestAssets.dll" />
+    <Reference Include="lib/Game.*.dll" />
+    <Reference Include="lib/GameAnalytics.dll" />
+    <Reference Include="lib/HBAO.*.dll" />
+    <Reference Include="lib/ICSharpCode.SharpZipLib.dll" />
+    <Reference Include="lib/JetBrains.Annotations.dll" />
+    <Reference Include="lib/LeTai.*.dll" />
+    <Reference Include="lib/MainMenuAssembly.dll" />
+    <Reference Include="lib/Mono.*.dll" />
+    <Reference Include="lib/Newtonsoft.Json.dll" />
+    <Reference Include="lib/SingularityGroup.*.dll" />
+    <Reference Include="lib/Sirenix.OdinInspector.Attributes.dll" />
+    <Reference Include="lib/SPZGameAssembly.dll" />
+    <Reference Include="lib/SPZPluginsAssembly.dll" />
+    <Reference Include="lib/Tayx.Graphy.dll" />
+    <Reference Include="lib/Unity.*.dll" />
+    <Reference Include="lib/UnityEngine.*.dll" />
+  </ItemGroup>
+  
+</Project>
