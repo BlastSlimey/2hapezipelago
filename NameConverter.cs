@@ -227,11 +227,11 @@ namespace _2hapezipelago
         {
             if (itemName.StartsWith("Task line #"))
             {
-                return $"RemoteTaskLine{itemName.Substring("Task line #".Length)}";
+                return $"RemoteTaskLine{itemName["Task line #".Length..]}";
             }
             else if (itemName.StartsWith("Operator line #"))
             {
-                return $"RemoteOperatorLine{itemName.Substring("Operator line #".Length)}";
+                return $"RemoteOperatorLine{itemName["Operator line #".Length..]}";
             }
             else if (itemName.EndsWith("Research Points"))
             {
@@ -255,7 +255,7 @@ namespace _2hapezipelago
             {
                 var serializedReward = new SerializedResearchRewardMechanic()
                 {
-                    MechanicId = $"TaskLine{itemName.Substring("Task line #".Length)}"
+                    MechanicId = $"TaskLine{itemName["Task line #".Length..]}"
                 };
                 return new[] { serializedReward };
             }
@@ -263,7 +263,7 @@ namespace _2hapezipelago
             {
                 var serializedReward = new SerializedResearchRewardMechanic()
                 {
-                    MechanicId = $"OperatorLine{itemName.Substring("Operator line #".Length)}"
+                    MechanicId = $"OperatorLine{itemName["Operator line #".Length..]}"
                 };
                 return new[] { serializedReward };
             }

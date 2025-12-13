@@ -14,12 +14,12 @@ namespace _2hapezipelago
         public ResearchHandler(APMod mod)
         {
             Mod = mod;
-            UnregisterHook = ShapezShifter.SharpDetour.DetourHelper.CreatePostfixHook<ResearchManager>(
-                (ResearchManager resManager) => resManager.Dispose(),
-                UnregisterEvents);
             RegisterHook = ShapezShifter.SharpDetour.DetourHelper.CreatePostfixHook<GameSessionOrchestrator, ResearchManager.SerializedData, bool>(
                 (orch, researchData, isNewGame) => orch.Init_3_2_EssentialManagers(researchData, isNewGame),
                 RegisterEvents);
+            UnregisterHook = ShapezShifter.SharpDetour.DetourHelper.CreatePostfixHook<ResearchManager>(
+                resManager => resManager.Dispose(),
+                UnregisterEvents);
         }
 
         public void RegisterEvents(GameSessionOrchestrator orch, ResearchManager.SerializedData researchData, bool isNewGame)
@@ -36,6 +36,10 @@ namespace _2hapezipelago
 
         public void ResearchUnlocked(IResearchUpgrade upgrade)
         {
+            if (Mod?.ConHandler?.Success == null) 
+            {
+                return;
+            }
             var idParts = upgrade.Id.Id.Split('_');
             if (idParts[0].Equals("LocMilestone"))
             {
@@ -43,6 +47,11 @@ namespace _2hapezipelago
                 for (int i = 0; i < upgrade.Rewards.Count; i++)
                 {
                     Mod?.ConHandler?.CheckLocation(NameConverter.MilestoneLocation(milestoneNum, i));
+                }
+                if (Mod?.ConHandler?.SlotDatHand?.Goal == SlotDataHandler.Goaltype.Milestone &&
+                    milestoneNum >= Mod?.ConHandler?.SlotDatHand?.MilestoneGoalNumber)
+                {
+                    Mod?.ConHandler?.Session?.SetGoalAchieved();
                 }
             }
             else if (idParts[0].Equals("LocTask"))
@@ -53,12 +62,32 @@ namespace _2hapezipelago
 
         public void OperatorLevelChanged()
         {
+            if (Mod?.ConHandler?.Success == null)
+            {
+                return;
+            }
             var playerLevel = GameHelper.Core.Research.PlayerLevel;
             for (var i = OperatorLevel + 1; i <= playerLevel.Level; i++)
             {
                 Mod?.ConHandler?.CheckLocation(NameConverter.OperatorLevelLocation(i));
             }
             OperatorLevel = playerLevel.Level;
+            if (Mod?.ConHandler?.SlotDatHand?.Goal == SlotDataHandler.Goaltype.Operator &&
+                playerLevel.Level >= Mod?.ConHandler?.SlotDatHand?.OperatorGoalLevel)
+            {
+                Mod?.ConHandler?.Session?.SetGoalAchieved();
+            }
+        }
+
+        public void ResyncChecks()
+        {
+            OperatorLevelChanged();
+            foreach (var upgradeId in GameHelper.Core.Research.Progress.UnlockedUpgrades)
+            {
+                var upgrade = GameHelper.Core.Research.Layout.GetUpgrade(upgradeId);
+                ResearchUnlocked(upgrade);
+            }
+            
         }
 
         [Obsolete]
@@ -79,7 +108,7 @@ namespace _2hapezipelago
             {
                 var serializedReward = new SerializedResearchRewardResearchPoints()
                 {
-                    Amount = Int32.Parse(remoteUpgradeId.Substring(2))
+                    Amount = Int32.Parse(remoteUpgradeId[2..])
                 };
                 resManager.RewardManager.GrantReward(ResearchRewardFactory.Create(serializedReward));
             }
@@ -87,12 +116,15 @@ namespace _2hapezipelago
             {
                 var serializedReward = new SerializedResearchRewardChunkLimit()
                 {
-                    Amount = Int32.Parse(remoteUpgradeId.Substring(2))
+                    Amount = Int32.Parse(remoteUpgradeId[2..])
                 };
                 resManager.RewardManager.GrantReward(ResearchRewardFactory.Create(serializedReward));
             }
-            var remoteUpgrade = resManager.Layout.GetUpgrade(new ResearchUpgradeId(remoteUpgradeId));
-            resManager.UnlockManager.TryUnlock(remoteUpgrade, true);
+            else
+            {
+                var remoteUpgrade = resManager.Layout.GetUpgrade(new ResearchUpgradeId(remoteUpgradeId));
+                resManager.UnlockManager.TryUnlock(remoteUpgrade, true);
+            }
         }
 
         public void Dispose()

@@ -9,10 +9,10 @@
 	<PropertyGroup>
 		<OutputPath>$(SPZ2_PERSISTENT)\mods\2hapezipelago</OutputPath>
 		<AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
+		<CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
 	</PropertyGroup>
 	
 	<ItemGroup>
-	    <PackageReference Include="Archipelago.MultiClient.Net" Version="6.7.0" />
 		<PackageReference Include="Krafs.Publicizer" Version="2.3.0">
 			<PrivateAssets>all</PrivateAssets>
 			<IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
@@ -25,7 +25,6 @@
 		</None>
 	</ItemGroup>
 
-	
 	<ItemGroup>
 		<Reference Include="Core">
 			<HintPath>$(SPZ2_PATH)\Core.dll</HintPath>
@@ -67,6 +66,14 @@
 			<HintPath>lib\MonoModRuntimeDetour\MonoMod.RuntimeDetour.dll</HintPath>
 			<Private>False</Private>
 		</Reference>
+		<Reference Include="Newtonsoft.Json">
+			<HintPath>$(SPZ2_PATH)\Newtonsoft.Json.dll</HintPath>
+			<Private>False</Private>
+		</Reference>
+		<Reference Include="Archipelago.Multiclient.Net">
+			<HintPath>lib\ArchipelagoMulticlientNet\Archipelago.Multiclient.Net.dll</HintPath>
+			<Private>true</Private>
+		</Reference>
 	</ItemGroup>
 
 	<PropertyGroup>
@@ -74,12 +81,12 @@
 	</PropertyGroup>
 
 	<ItemGroup>
-		<DoNotPublicize Include="System.Collections.Generic:Dictionary" IncludeCompilerGeneratedMembers="false" IncludeVirtualMembers="false"/>
-		<DoNotPublicize Include="SPZGameAssembly:BeltLaneRenderingDefinition" IncludeCompilerGeneratedMembers="false" IncludeVirtualMembers="false"/>
-		<DoNotPublicize Include="Game.Core.Coordinates" IncludeCompilerGeneratedMembers="false" IncludeVirtualMembers="false"/>
-		<DoNotPublicize Include="SPZGameAssembly:BuildingDefinition" IncludeCompilerGeneratedMembers="false" IncludeVirtualMembers="false"/>
-		<DoNotPublicize Include="Game.Orchestration:ParentToolbarElementData" IncludeCompilerGeneratedMembers="false" IncludeVirtualMembers="false"/>
-		<DoNotPublicize Include="Game.Orchestration:RootToolbarElementData" IncludeCompilerGeneratedMembers="false" IncludeVirtualMembers="false"/>
+		<DoNotPublicize Include="System.Collections.Generic:Dictionary" IncludeCompilerGeneratedMembers="false" IncludeVirtualMembers="false" />
+		<DoNotPublicize Include="SPZGameAssembly:BeltLaneRenderingDefinition" IncludeCompilerGeneratedMembers="false" IncludeVirtualMembers="false" />
+		<DoNotPublicize Include="Game.Core.Coordinates" IncludeCompilerGeneratedMembers="false" IncludeVirtualMembers="false" />
+		<DoNotPublicize Include="SPZGameAssembly:BuildingDefinition" IncludeCompilerGeneratedMembers="false" IncludeVirtualMembers="false" />
+		<DoNotPublicize Include="Game.Orchestration:ParentToolbarElementData" IncludeCompilerGeneratedMembers="false" IncludeVirtualMembers="false" />
+		<DoNotPublicize Include="Game.Orchestration:RootToolbarElementData" IncludeCompilerGeneratedMembers="false" IncludeVirtualMembers="false" />
 	</ItemGroup>
 
 </Project>

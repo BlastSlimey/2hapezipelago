@@ -22,11 +22,13 @@ namespace _2hapezipelago
         public SaveDataHandler(APMod mod)
         {
             Mod = mod;
-            SaveData = Mod.CreateSaveData<APModData>();
-            SaveData.OnDataLoaded += data =>
+            SaveData = new ModSaveData<APModData>("2hapezipelago.json", defaultData: new APModData()
             {
-
-            };
+                ReceivedItemsCount = 0,
+                PlayerName = "",
+                AddressPort = "",
+                Password = ""
+            });
         }
 
         public void Dispose()

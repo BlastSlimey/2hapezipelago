@@ -1,8 +1,10 @@
 ﻿# Roadmap for 2hapezipelago
 
-## 1.0.0 (Initial release)
+## 0.1.0 (Solo-only mode)
 
-TODO
+Same as 1.0.0, but not multiworld-viable due to mod not usable
+
+## 1.0.0 (Initial release)
 
 - Locations:
     - Level rewards
@@ -19,12 +21,3 @@ TODO
 - Goals:
     - All milestones
     - Operator level x
-
-- TODO:
-    - Saving and loading received items count and connection details
-    - resync locations upon connecting
-    - Proper disconnect handling
-    - Check disposing
-    - disconnect upon returning to main menu
-    - goals
-    - apworld

@@ -25,8 +25,8 @@ namespace _2hapezipelago
             ResHandler?.Dispose();
             SaveHandler?.Dispose();
             ConHandler = null;
-            ResHandler = null;
             SaveHandler = null;
+            ResHandler = null;
         }
     }
 }

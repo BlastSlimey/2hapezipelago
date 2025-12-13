@@ -1,8 +1,10 @@
 ﻿using System;
+using System.Collections.Generic;
 using Archipelago.MultiClient.Net;
 using Archipelago.MultiClient.Net.Enums;
 using Archipelago.MultiClient.Net.Helpers;
 using Archipelago.MultiClient.Net.MessageLog.Messages;
+using MonoMod.RuntimeDetour;
 using ShapezShifter.Flow;
 using ILogger = Core.Logging.ILogger;
 
@@ -14,19 +16,21 @@ namespace _2hapezipelago
         public ILogger Logger;
         public ArchipelagoSession? Session;
         public LoginSuccessful? Success;
-        public string? PlayerName;
-        public string? AddressPort;
-        public string? Password;
         public int ReceivedItemsCount = 0;
-        public int LoadedReceivedItemsCount = 0;
+        public Hook DisconnectOnDisposeHook;
+        public SlotDataHandler? SlotDatHand;
 
         public ConnectionHandler(APMod mod)
         {
             Mod = mod;
             Logger = Mod.Logger;
-            Mod.RegisterConsoleCommand("ap.connect", CommandConnect, isCheat: true, arg1: new DebugConsole.StringOption("slotnameAddressPortPassword"));
-            Mod.RegisterConsoleCommand("ap.reconnect", Connect, isCheat: true);
-            Mod.RegisterConsoleCommand("ap.help", CommandHelp);
+            Mod.RegisterConsoleCommand("ap.connect", CommandConnect, arg1: new DebugConsole.StringOption("slotnameAddressPortPassword"), useAssemblyPrefix: false);
+            Mod.RegisterConsoleCommand("ap.reconnect", Connect, useAssemblyPrefix: false);
+            Mod.RegisterConsoleCommand("ap.help", CommandHelp, useAssemblyPrefix: false);
+            Mod.RegisterConsoleCommand("ap.disconnect", ctx => { Disconnect(); }, useAssemblyPrefix: false);
+            DisconnectOnDisposeHook = ShapezShifter.SharpDetour.DetourHelper.CreatePostfixHook<GameSessionOrchestrator>(
+                orch => orch.Dispose(),
+                orch => { Disconnect(); });
         }
 
         private void CommandConnect(DebugConsole.CommandContext ctx)
@@ -55,10 +59,11 @@ namespace _2hapezipelago
 
         private void CommandHelp(DebugConsole.CommandContext ctx)
         {
-            ctx.Output("If you connect this savegame for the first time, type 'ap.connect player@address:port' " +
-                "or 'ap.connect player:password@address:port' if your multiworld has a password. " +
-                "Your connection details will then be saved to the savegame, so that you can use 'ap.reconnect' every time after the first time. " +
-                "To disconnect, just return to the main menu.");
+            ctx.Output(
+                "If you connect this savegame for the first time, type 'ap.connect player@address:port'" +
+                "\nor 'ap.connect player:password@address:port' if your multiworld has a password. " +
+                "\nYour connection details will then be saved to the savegame, so that you can use " +
+                "\n'ap.reconnect' every time after the first time. To disconnect, just return to the main menu.");
         }
 
         public void CheckLocation(string locationName)
@@ -69,22 +74,28 @@ namespace _2hapezipelago
 
         public void Connect(DebugConsole.CommandContext ctx)
         {
-            if (PlayerName == null || AddressPort == null || Password == null)
+            var PlayerName = Mod?.SaveHandler?.SaveData.Data.PlayerName ?? "";
+            var AddressPort = Mod?.SaveHandler?.SaveData.Data.AddressPort ?? "";
+            if (PlayerName == "" || AddressPort == "")
             {
-                Logger.Warning?.Log("Trying to reconnect but no connection details found");
-                ctx.Output("Trying to reconnect but no connection details found");
+                Logger.Warning?.Log("Trying to reconnect but no connection details found or incomplete");
+                ctx.Output("Trying to reconnect but no connection details found or incomplete");
                 return;
             }
-            Connect(PlayerName, AddressPort, Password, ctx);
+            Connect(PlayerName, AddressPort, Mod?.SaveHandler?.SaveData.Data.Password ?? "", ctx);
         }
 
         public void Connect(string playername, string addressPort, string password, DebugConsole.CommandContext ctx)
         {
             Session = ArchipelagoSessionFactory.CreateSession(addressPort);
             LoginResult result;
-            PlayerName = playername;
-            AddressPort = addressPort;
-            Password = password;
+            var SaveHandler = Mod?.SaveHandler ?? null;
+            if (SaveHandler != null)
+            {
+                SaveHandler.SaveData.Data.PlayerName = playername;
+                SaveHandler.SaveData.Data.AddressPort = addressPort;
+                SaveHandler.SaveData.Data.Password = password;
+            }
 
             try
             {
@@ -118,42 +129,53 @@ namespace _2hapezipelago
                 Logger.Info?.Log("Connection successful");
                 ctx.Output("Connection successful");
                 ReceivedItemsCount = 0;
-                Session.Items.ItemReceived += (ReceivedItemsHelper receivedItemsHelper) => 
+                SlotDatHand = new SlotDataHandler(Success.SlotData);
+                Session.Items.ItemReceived += receivedItemsHelper => 
                 {
                     try
                     {
                         var itemInfo = receivedItemsHelper.DequeueItem();
-                        if (ReceivedItemsCount >= LoadedReceivedItemsCount)
+                        if (ReceivedItemsCount >= Mod?.SaveHandler?.SaveData.Data.ReceivedItemsCount)
                         {
                             Mod?.ResHandler?.ReceiveReward(NameConverter.RemoteUpgrade(itemInfo.ItemName));
                         }
                         ReceivedItemsCount++;
-                        LoadedReceivedItemsCount = ReceivedItemsCount;
+                        if (SaveHandler != null)
+                        {
+                            SaveHandler.SaveData.Data.ReceivedItemsCount = ReceivedItemsCount;
+                        }
                     }
                     catch (Exception e)
                     {
                         Logger.Warning?.Log("Receiving item failed: " + e.Message);
-                        ctx.Output("Receiving item failed: " + e.Message);
+                        ctx.Output("Receiving item failed: \n" + e.Message);
                     }
                 };
-                Session.MessageLog.OnMessageReceived += (LogMessage message) => 
+                Session.MessageLog.OnMessageReceived += message => 
                 {
                     Logger.Info?.Log(message.ToString());
                     ctx.Output(message.ToString());
                 };
-                Session.Socket.SocketClosed += (string reason) =>
+                Session.Socket.SocketClosed += reason =>
                 {
                     Success = null;
                     Logger.Info?.Log(reason);
                     ctx.Output(reason);
                 };
+                Mod?.ResHandler?.ResyncChecks();
             }
+        }
+
+        public void Disconnect()
+        {
+            Session?.Socket.DisconnectAsync().Start();
         }
 
         public void Dispose()
         {
             Mod = null;
-            Session?.Socket.DisconnectAsync().Start();
+            Disconnect();
+            DisconnectOnDisposeHook.Dispose();
         }
     }
 }
