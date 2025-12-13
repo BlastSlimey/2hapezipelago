@@ -1,0 +1,21 @@
+﻿{
+    "Version": "0.1.0",
+  	"Description": "Adds compatibility with the Archipelago Multiworld Randomizer",
+  	"Author": "BlastSlimey",
+	"AffectsSaveGames": true,
+	"DisablesAchievements": true,
+  	"SaveGameCompabilityRange": "*",
+  	"GameVersionSupportRange": ">=1.0.0",
+  	"Assemblies": [
+        "Archipelago.Multiclient.Net.dll",
+        "2hapezipelago.dll"
+    ],
+  	"Dependencies": [
+  		{
+  			"ModId": "local:ShapezShifter",
+            "ModTitle": "Shapez Shifter",
+            "Version": "0.*.*"
+  		}
+	],
+	"Conflicts": []
+}

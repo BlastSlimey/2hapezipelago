@@ -1,0 +1,85 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+	<PropertyGroup>
+		<TargetFramework>netstandard2.1</TargetFramework>
+		<RootNamespace>_2hapezipelago</RootNamespace>
+		<Nullable>enable</Nullable>
+	</PropertyGroup>
+	
+	<PropertyGroup>
+		<OutputPath>$(SPZ2_PERSISTENT)\mods\2hapezipelago</OutputPath>
+		<AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
+	</PropertyGroup>
+	
+	<ItemGroup>
+	    <PackageReference Include="Archipelago.MultiClient.Net" Version="6.7.0" />
+		<PackageReference Include="Krafs.Publicizer" Version="2.3.0">
+			<PrivateAssets>all</PrivateAssets>
+			<IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+		</PackageReference>
+	</ItemGroup>
+
+	<ItemGroup>
+		<None Update="manifest.json">
+			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+		</None>
+	</ItemGroup>
+
+	
+	<ItemGroup>
+		<Reference Include="Core">
+			<HintPath>$(SPZ2_PATH)\Core.dll</HintPath>
+			<Private>False</Private>
+		</Reference>
+		<Reference Include="Game.Content">
+			<HintPath>$(SPZ2_PATH)\Game.Content.dll</HintPath>
+			<Private>False</Private>
+		</Reference>
+		<Reference Include="Game.Content.Features">
+			<HintPath>$(SPZ2_PATH)\Game.Content.Features.dll</HintPath>
+			<Private>False</Private>
+		</Reference>
+		<Reference Include="Game.Core">
+			<HintPath>$(SPZ2_PATH)\Game.Core.dll</HintPath>
+			<Private>False</Private>
+		</Reference>
+		<Reference Include="Game.Core.Modding">
+			<HintPath>$(SPZ2_PATH)\Game.Core.Modding.dll</HintPath>
+			<Private>False</Private>
+		</Reference>
+		<Reference Include="Game.Orchestration">
+			<HintPath>$(SPZ2_PATH)\Game.Orchestration.dll</HintPath>
+			<Private>False</Private>
+		</Reference>
+		<Reference Include="SPZGameAssembly">
+			<HintPath>$(SPZ2_PATH)\SPZGameAssembly.dll</HintPath>
+			<Private>False</Private>
+		</Reference>
+		<Reference Include="UnityEngine.CoreModule">
+			<HintPath>$(SPZ2_PATH)\UnityEngine.CoreModule.dll</HintPath>
+			<Private>False</Private>
+		</Reference>
+		<Reference Include="ShapezShifter">
+			<HintPath>lib\ShapezShifter\ShapezShifter.dll</HintPath>
+			<Private>False</Private>
+		</Reference>
+		<Reference Include="MonoMod.RuntimeDetour">
+			<HintPath>lib\MonoModRuntimeDetour\MonoMod.RuntimeDetour.dll</HintPath>
+			<Private>False</Private>
+		</Reference>
+	</ItemGroup>
+
+	<PropertyGroup>
+		<PublicizeAll>true</PublicizeAll>
+	</PropertyGroup>
+
+	<ItemGroup>
+		<DoNotPublicize Include="System.Collections.Generic:Dictionary" IncludeCompilerGeneratedMembers="false" IncludeVirtualMembers="false"/>
+		<DoNotPublicize Include="SPZGameAssembly:BeltLaneRenderingDefinition" IncludeCompilerGeneratedMembers="false" IncludeVirtualMembers="false"/>
+		<DoNotPublicize Include="Game.Core.Coordinates" IncludeCompilerGeneratedMembers="false" IncludeVirtualMembers="false"/>
+		<DoNotPublicize Include="SPZGameAssembly:BuildingDefinition" IncludeCompilerGeneratedMembers="false" IncludeVirtualMembers="false"/>
+		<DoNotPublicize Include="Game.Orchestration:ParentToolbarElementData" IncludeCompilerGeneratedMembers="false" IncludeVirtualMembers="false"/>
+		<DoNotPublicize Include="Game.Orchestration:RootToolbarElementData" IncludeCompilerGeneratedMembers="false" IncludeVirtualMembers="false"/>
+	</ItemGroup>
+
+</Project>
