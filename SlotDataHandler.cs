@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Text;
+using Newtonsoft.Json.Linq;
 
 namespace _2hapezipelago
 {
@@ -17,25 +18,27 @@ namespace _2hapezipelago
         public int MilestoneGoalNumber;
         public int OperatorGoalLevel;
 
-        public SlotDataHandler(Dictionary<string, object> slotData)
+        public SlotDataHandler(Dictionary<string, object> slotData, APMod mod, DebugConsole.CommandContext ctx)
         {
             SlotData = slotData;
+            JObject options = (JObject)slotData["options"];
+            JObject locAdjust = (JObject)options["location_adjustments"];
             
-            if ((string)slotData["goal"] == "Milestone")
+            if ((string)options["goal"] == "milestones")
             {
                 Goal = Goaltype.Milestone;
             }
-            else if ((string)slotData["goal"] == "Operator level")
+            else if ((string)options["goal"] == "operator_levels")
             {
                 Goal = Goaltype.Operator;
             }
             else
             {
-                throw new Exception("Bad goal in slot data: " + (string)slotData["goal"]);
+                throw new Exception("Bad goal in slot data: " + (string)options["goal"]);
             }
 
-            MilestoneGoalNumber = (int)slotData["milestone_goal_number"];
-            OperatorGoalLevel = (int)slotData["operator_goal_level"];
+            MilestoneGoalNumber = (int)locAdjust["Milestones"];
+            OperatorGoalLevel = (int)locAdjust["Operator lines"];
         }
     }
 }

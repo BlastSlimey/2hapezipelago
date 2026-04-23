@@ -25,6 +25,10 @@
 		</None>
 	</ItemGroup>
 
+	<Target Name="SteamPublish">
+		<Exec Command='sh .\Steam\SteamPublish.sh "$(OutputPath)'/>
+	</Target>
+
 	<ItemGroup>
 		<Reference Include="Core">
 			<HintPath>$(SPZ2_PATH)\Core.dll</HintPath>

@@ -6,12 +6,87 @@ using Archipelago.MultiClient.Net.Helpers;
 using Archipelago.MultiClient.Net.MessageLog.Messages;
 using MonoMod.RuntimeDetour;
 using ShapezShifter.Flow;
+using ShapezShifter.Hijack;
+using ShapezShifter.Kit;
 using ILogger = Core.Logging.ILogger;
 
 namespace _2hapezipelago
 {
     public class ConnectionHandler : IDisposable
     {
+        //Fix for the current problem of ShapezShifter appending a bad prefix to debug commands.
+        //Remove this once fixed.
+        private class ModConsoleRewirerFix : IConsoleRewirer, IRewirer, IEquatable<IRewirer>, IDisposable
+        {
+            public readonly APMod Mod;
+            public readonly List<Action<IDebugConsole>> ConsoleCommandsAddActions = new List<Action<IDebugConsole>>();
+            public readonly RewirerHandle Handle;
+
+            public ModConsoleRewirerFix(APMod mod)
+            {
+                Mod = mod;
+                Handle = GameRewirers.AddRewirer(this);
+            }
+
+            public void AddCommand(Action<IDebugConsole> command)
+            {
+                ConsoleCommandsAddActions.Add(command);
+            }
+
+            public void RegisterCommands(IDebugConsole console)
+            {
+                ModConsoleCommandWrapperFix obj = new ModConsoleCommandWrapperFix(Mod, console);
+                foreach (Action<IDebugConsole> consoleCommandsAddAction in ConsoleCommandsAddActions)
+                {
+                    consoleCommandsAddAction(obj);
+                }
+            }
+
+            public void Dispose()
+            {
+                GameRewirers.RemoveRewirer(Handle);
+            }
+        }
+
+        //Fix for the current problem of ShapezShifter appending a bad prefix to debug commands.
+        //Remove this once fixed.
+        private class ModConsoleCommandWrapperFix : IDebugConsole
+        {
+            public readonly IDebugConsole Console;
+            public readonly string ModPrefix;
+
+            public ModConsoleCommandWrapperFix(APMod mod, IDebugConsole console)
+            {
+                Console = console;
+                ModPrefix = mod.GetType().Assembly.GetName().Name;
+            }
+
+            public List<string> GetAutoCompletions(string start)
+            {
+                return Console.GetAutoCompletions(start);
+            }
+
+            public void ParseAndExecute(string command, Action<string> output)
+            {
+                Console.ParseAndExecute(command, output);
+            }
+
+            public void Register(string id, Action<DebugConsole.CommandContext> handler, bool isCheat = false)
+            {
+                Console.Register(ModPrefix + "." + id, handler, isCheat);
+            }
+
+            public void Register(string id, DebugConsole.ConsoleOption option0, Action<DebugConsole.CommandContext> handler, bool isCheat = false)
+            {
+                Console.Register(ModPrefix + "." + id, option0, handler, isCheat);
+            }
+
+            public void Register(string id, DebugConsole.ConsoleOption option0, DebugConsole.ConsoleOption option1, Action<DebugConsole.CommandContext> handler, bool isCheat = false)
+            {
+                Console.Register(ModPrefix + "." + id, option0, option1, handler, isCheat);
+            }
+        }
+
         public APMod? Mod;
         public ILogger Logger;
         public ArchipelagoSession? Session;
@@ -24,21 +99,34 @@ namespace _2hapezipelago
         {
             Mod = mod;
             Logger = Mod.Logger;
-            Mod.RegisterConsoleCommand("ap.connect", CommandConnect, arg1: new DebugConsole.StringOption("slotnameAddressPortPassword"), useAssemblyPrefix: false);
-            Mod.RegisterConsoleCommand("ap.reconnect", Connect, useAssemblyPrefix: false);
-            Mod.RegisterConsoleCommand("ap.help", CommandHelp, useAssemblyPrefix: false);
-            Mod.RegisterConsoleCommand("ap.disconnect", ctx => { Disconnect(); }, useAssemblyPrefix: false);
+            new ModConsoleRewirerFix(mod).AddCommand(con =>
+            {
+                con.Register("connect", new DebugConsole.StringOption("slotnameAddressPortPassword"), ctx =>
+                {
+                    if (CommandConnect(ctx))
+                    {
+                        var con2 = con is ModConsoleCommandsCreator.ModConsoleCommandWrapper wrapper ? wrapper.Console : con;
+                        if (con2 is DebugConsole deb)
+                        {
+                            deb.Savegame.CheatsEnabled = true;
+                        }
+                    }
+                });
+                con.Register("reconnect", Connect);
+                con.Register("help", CommandHelp);
+                con.Register("disconnect", ctx => { Disconnect(); });
+            });
             DisconnectOnDisposeHook = ShapezShifter.SharpDetour.DetourHelper.CreatePostfixHook<GameSessionOrchestrator>(
                 orch => orch.Dispose(),
                 orch => { Disconnect(); });
         }
 
-        private void CommandConnect(DebugConsole.CommandContext ctx)
+        private bool CommandConnect(DebugConsole.CommandContext ctx)
         {
             if (ctx.Options.Length != 1)
             {
                 CommandHelp(ctx);
-                return;
+                return false;
             }
             var input = ctx.GetString(0);
             var playerPassword = input[..input.IndexOf('@')];
@@ -55,6 +143,7 @@ namespace _2hapezipelago
             }
             var addressPort = input[(input.IndexOf('@') + 1)..];
             this.Connect(player, addressPort, password, ctx);
+            return true;
         }
 
         private void CommandHelp(DebugConsole.CommandContext ctx)
@@ -74,15 +163,15 @@ namespace _2hapezipelago
 
         public void Connect(DebugConsole.CommandContext ctx)
         {
-            var PlayerName = Mod?.SaveHandler?.SaveData.Data.PlayerName ?? "";
-            var AddressPort = Mod?.SaveHandler?.SaveData.Data.AddressPort ?? "";
+            var PlayerName = Mod?.SaveHandler?.SaveData.PlayerName ?? "";
+            var AddressPort = Mod?.SaveHandler?.SaveData.AddressPort ?? "";
             if (PlayerName == "" || AddressPort == "")
             {
                 Logger.Warning?.Log("Trying to reconnect but no connection details found or incomplete");
                 ctx.Output("Trying to reconnect but no connection details found or incomplete");
                 return;
             }
-            Connect(PlayerName, AddressPort, Mod?.SaveHandler?.SaveData.Data.Password ?? "", ctx);
+            Connect(PlayerName, AddressPort, Mod?.SaveHandler?.SaveData.Password ?? "", ctx);
         }
 
         public void Connect(string playername, string addressPort, string password, DebugConsole.CommandContext ctx)
@@ -92,10 +181,42 @@ namespace _2hapezipelago
             var SaveHandler = Mod?.SaveHandler ?? null;
             if (SaveHandler != null)
             {
-                SaveHandler.SaveData.Data.PlayerName = playername;
-                SaveHandler.SaveData.Data.AddressPort = addressPort;
-                SaveHandler.SaveData.Data.Password = password;
+                SaveHandler.SaveData.PlayerName = playername;
+                SaveHandler.SaveData.AddressPort = addressPort;
+                SaveHandler.SaveData.Password = password;
             }
+            Session.Items.ItemReceived += receivedItemsHelper =>
+            {
+                try
+                {
+                    var itemInfo = receivedItemsHelper.DequeueItem();
+                    if (ReceivedItemsCount >= Mod?.SaveHandler?.SaveData.ReceivedItemsCount)
+                    {
+                        Mod?.ResHandler?.ReceiveReward(NameConverter.RemoteUpgrade(itemInfo.ItemName));
+                    }
+                    ReceivedItemsCount++;
+                    if (SaveHandler != null)
+                    {
+                        SaveHandler.SaveData.ReceivedItemsCount = ReceivedItemsCount;
+                    }
+                }
+                catch (Exception e)
+                {
+                    Logger.Warning?.Log("Receiving item failed: " + e.Message);
+                    // ctx.Output("Receiving item failed: \n" + e.Message);
+                }
+            };
+            Session.MessageLog.OnMessageReceived += message =>
+            {
+                Logger.Info?.Log(message.ToString());
+                // ctx.Output(message.ToString());
+            };
+            Session.Socket.SocketClosed += reason =>
+            {
+                Success = null;
+                Logger.Info?.Log(reason);
+                // ctx.Output(reason);
+            };
 
             try
             {
@@ -129,39 +250,7 @@ namespace _2hapezipelago
                 Logger.Info?.Log("Connection successful");
                 ctx.Output("Connection successful");
                 ReceivedItemsCount = 0;
-                SlotDatHand = new SlotDataHandler(Success.SlotData);
-                Session.Items.ItemReceived += receivedItemsHelper => 
-                {
-                    try
-                    {
-                        var itemInfo = receivedItemsHelper.DequeueItem();
-                        if (ReceivedItemsCount >= Mod?.SaveHandler?.SaveData.Data.ReceivedItemsCount)
-                        {
-                            Mod?.ResHandler?.ReceiveReward(NameConverter.RemoteUpgrade(itemInfo.ItemName));
-                        }
-                        ReceivedItemsCount++;
-                        if (SaveHandler != null)
-                        {
-                            SaveHandler.SaveData.Data.ReceivedItemsCount = ReceivedItemsCount;
-                        }
-                    }
-                    catch (Exception e)
-                    {
-                        Logger.Warning?.Log("Receiving item failed: " + e.Message);
-                        ctx.Output("Receiving item failed: \n" + e.Message);
-                    }
-                };
-                Session.MessageLog.OnMessageReceived += message => 
-                {
-                    Logger.Info?.Log(message.ToString());
-                    ctx.Output(message.ToString());
-                };
-                Session.Socket.SocketClosed += reason =>
-                {
-                    Success = null;
-                    Logger.Info?.Log(reason);
-                    ctx.Output(reason);
-                };
+                SlotDatHand = new SlotDataHandler(Success.SlotData, Mod, ctx);
                 Mod?.ResHandler?.ResyncChecks();
             }
         }
@@ -169,6 +258,8 @@ namespace _2hapezipelago
         public void Disconnect()
         {
             Session?.Socket.DisconnectAsync().Start();
+            Session = null;
+            Success = null;
         }
 
         public void Dispose()
