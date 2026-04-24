@@ -1,4 +1,6 @@
 ﻿using System;
+using System.Linq.Expressions;
+using System.Reflection;
 using Game.Core.Research;
 using MonoMod.RuntimeDetour;
 using ShapezShifter.Kit;
@@ -9,7 +11,7 @@ namespace _2hapezipelago
     {
         public APMod? Mod;
         public int OperatorLevel = 0;
-        public Hook RegisterHook, UnregisterHook;
+        public Hook RegisterHook, UnregisterHook, HudMilestoneReceiveFixHook, HudCompassReceiveFixHook;
 
         public ResearchHandler(APMod mod)
         {
@@ -20,6 +22,13 @@ namespace _2hapezipelago
             UnregisterHook = ShapezShifter.SharpDetour.DetourHelper.CreatePostfixHook<ResearchManager>(
                 resManager => resManager.Dispose(),
                 UnregisterEvents);
+            // Following hooks are created because of crashes when receiving an item
+            Expression<Action<HUDMilestoneSummaryDisplay>> onLevelChangedExpr = disp => disp.OnLevelChanged();
+            MethodInfo runtimeMethod = ShapezShifter.SharpDetour.DetourHelper.GetRuntimeMethod(onLevelChangedExpr);
+            HudMilestoneReceiveFixHook = new Hook(runtimeMethod, new Action<Action<HUDMilestoneSummaryDisplay>, HUDMilestoneSummaryDisplay>(HudMilestoneReceiveFix));
+            Expression<Action<HUDCompass>> updateShapePreviewMeshExpr = comp => comp.UpdateShapePreviewMesh();
+            runtimeMethod = ShapezShifter.SharpDetour.DetourHelper.GetRuntimeMethod(updateShapePreviewMeshExpr);
+            HudCompassReceiveFixHook = new Hook(runtimeMethod, new Action<Action<HUDCompass>, HUDCompass>(HudCompassReceiveFix));
         }
 
         public void RegisterEvents(GameSessionOrchestrator orch, ResearchManager.SerializedData researchData, bool isNewGame)
@@ -32,6 +41,22 @@ namespace _2hapezipelago
         {
             resManager.UnlockManager.OnResearchManuallyUnlockedByPlayer.TryUnregister(ResearchUnlocked);
             resManager.PlayerLevel.OnLevelChanged.TryUnregister(OperatorLevelChanged);
+        }
+
+        public void HudMilestoneReceiveFix(Action<HUDMilestoneSummaryDisplay> orig, HUDMilestoneSummaryDisplay self)
+        {
+            if (DateTimeOffset.Now.ToUnixTimeMilliseconds() - Mod?.ConHandler?.LastReceive >= 250)
+            {
+                orig(self);
+            }
+        }
+
+        public void HudCompassReceiveFix(Action<HUDCompass> orig, HUDCompass self)
+        {
+            if (DateTimeOffset.Now.ToUnixTimeMilliseconds() - Mod?.ConHandler?.LastReceive >= 250)
+            {
+                orig(self);
+            }
         }
 
         public void ResearchUnlocked(IResearchUpgrade upgrade)
@@ -118,6 +143,7 @@ namespace _2hapezipelago
 
         public void ReceiveReward(string remoteUpgradeId)
         {
+            Mod?.Logger.Info?.Log($"[Debug] Received {remoteUpgradeId} at {Mod?.ConHandler?.LastReceive}");
             var resManager = GameHelper.Core.Research;
             if (remoteUpgradeId.StartsWith("rp"))
             {
@@ -147,6 +173,8 @@ namespace _2hapezipelago
             Mod = null;
             RegisterHook.Dispose();
             UnregisterHook.Dispose();
+            HudMilestoneReceiveFixHook.Dispose();
+            HudCompassReceiveFixHook.Dispose();
         }
     }
 }

@@ -2,12 +2,9 @@
 using System.Collections.Generic;
 using Archipelago.MultiClient.Net;
 using Archipelago.MultiClient.Net.Enums;
-using Archipelago.MultiClient.Net.Helpers;
-using Archipelago.MultiClient.Net.MessageLog.Messages;
 using MonoMod.RuntimeDetour;
 using ShapezShifter.Flow;
 using ShapezShifter.Hijack;
-using ShapezShifter.Kit;
 using ILogger = Core.Logging.ILogger;
 
 namespace _2hapezipelago
@@ -94,6 +91,7 @@ namespace _2hapezipelago
         public int ReceivedItemsCount = 0;
         public Hook DisconnectOnDisposeHook;
         public SlotDataHandler? SlotDatHand;
+        public long LastReceive = 0;
 
         public ConnectionHandler(APMod mod)
         {
@@ -178,7 +176,7 @@ namespace _2hapezipelago
         {
             Session = ArchipelagoSessionFactory.CreateSession(addressPort);
             LoginResult result;
-            var SaveHandler = Mod?.SaveHandler ?? null;
+            var SaveHandler = Mod?.SaveHandler;
             if (SaveHandler != null)
             {
                 SaveHandler.SaveData.PlayerName = playername;
@@ -189,15 +187,16 @@ namespace _2hapezipelago
             {
                 try
                 {
+                    LastReceive = DateTimeOffset.Now.ToUnixTimeMilliseconds();
                     var itemInfo = receivedItemsHelper.DequeueItem();
-                    if (ReceivedItemsCount >= Mod?.SaveHandler?.SaveData.ReceivedItemsCount)
+                    ReceivedItemsCount++;
+                    if (ReceivedItemsCount > Mod?.SaveHandler?.SaveData.ReceivedItemsCount)
                     {
                         Mod?.ResHandler?.ReceiveReward(NameConverter.RemoteUpgrade(itemInfo.ItemName));
-                    }
-                    ReceivedItemsCount++;
-                    if (SaveHandler != null)
-                    {
-                        SaveHandler.SaveData.ReceivedItemsCount = ReceivedItemsCount;
+                        if (SaveHandler != null)
+                        {
+                            SaveHandler.SaveData.ReceivedItemsCount = ReceivedItemsCount;
+                        }
                     }
                 }
                 catch (Exception e)
@@ -257,7 +256,7 @@ namespace _2hapezipelago
 
         public void Disconnect()
         {
-            Session?.Socket.DisconnectAsync().Start();
+            Session?.Socket.DisconnectAsync();
             Session = null;
             Success = null;
         }
