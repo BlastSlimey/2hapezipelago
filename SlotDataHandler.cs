@@ -38,7 +38,7 @@ namespace _2hapezipelago
             }
 
             MilestoneGoalNumber = (int)locAdjust["Milestones"];
-            OperatorGoalLevel = (int)locAdjust["Operator lines"];
+            OperatorGoalLevel = (int)locAdjust["Operator level checks"];
         }
     }
 }
