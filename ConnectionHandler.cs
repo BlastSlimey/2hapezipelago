@@ -147,10 +147,10 @@ namespace _2hapezipelago
         private void CommandHelp(DebugConsole.CommandContext ctx)
         {
             ctx.Output(
-                "If you connect this savegame for the first time, type 'ap.connect player@address:port'" +
-                "\nor 'ap.connect player:password@address:port' if your multiworld has a password. " +
+                "If you connect this savegame for the first time, type '2hapezipelago.connect player@address:port'" +
+                "\nor '2hapezipelago.connect player:password@address:port' if your multiworld has a password. " +
                 "\nYour connection details will then be saved to the savegame, so that you can use " +
-                "\n'ap.reconnect' every time after the first time. To disconnect, just return to the main menu.");
+                "\n'2hapezipelago.reconnect' every time after the first time. To disconnect, just return to the main menu.");
         }
 
         public void CheckLocation(string locationName)
@@ -174,6 +174,10 @@ namespace _2hapezipelago
 
         public void Connect(string playername, string addressPort, string password, DebugConsole.CommandContext ctx)
         {
+            if (Session != null)
+            {
+                Disconnect();
+            }
             Session = ArchipelagoSessionFactory.CreateSession(addressPort);
             LoginResult result;
             var SaveHandler = Mod?.SaveHandler;
@@ -190,6 +194,7 @@ namespace _2hapezipelago
                     LastReceive = DateTimeOffset.Now.ToUnixTimeMilliseconds();
                     var itemInfo = receivedItemsHelper.DequeueItem();
                     ReceivedItemsCount++;
+                    Logger.Info?.Log($"[Debug] Receiving item #{ReceivedItemsCount} ({Mod?.SaveHandler?.SaveData.ReceivedItemsCount} in save data)");
                     if (ReceivedItemsCount > Mod?.SaveHandler?.SaveData.ReceivedItemsCount)
                     {
                         Mod?.ResHandler?.ReceiveReward(NameConverter.RemoteUpgrade(itemInfo.ItemName));
@@ -248,7 +253,6 @@ namespace _2hapezipelago
                 Success = (LoginSuccessful)result;
                 Logger.Info?.Log("Connection successful");
                 ctx.Output("Connection successful");
-                ReceivedItemsCount = 0;
                 SlotDatHand = new SlotDataHandler(Success.SlotData, Mod, ctx);
                 Mod?.ResHandler?.ResyncChecks();
             }
@@ -259,6 +263,7 @@ namespace _2hapezipelago
             Session?.Socket.DisconnectAsync();
             Session = null;
             Success = null;
+            ReceivedItemsCount = 0;
         }
 
         public void Dispose()

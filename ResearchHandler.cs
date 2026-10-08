@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Linq.Expressions;
 using System.Reflection;
 using Game.Core.Research;
@@ -11,24 +12,30 @@ namespace _2hapezipelago
     {
         public APMod? Mod;
         public int OperatorLevel = 0;
-        public Hook RegisterHook, UnregisterHook, HudMilestoneReceiveFixHook, HudCompassReceiveFixHook;
+        public List<Hook> DetourHooks;
 
         public ResearchHandler(APMod mod)
         {
             Mod = mod;
-            RegisterHook = ShapezShifter.SharpDetour.DetourHelper.CreatePostfixHook<GameSessionOrchestrator, ResearchManager.SerializedData, bool>(
-                (orch, researchData, isNewGame) => orch.Init_3_2_EssentialManagers(researchData, isNewGame),
-                RegisterEvents);
-            UnregisterHook = ShapezShifter.SharpDetour.DetourHelper.CreatePostfixHook<ResearchManager>(
-                resManager => resManager.Dispose(),
-                UnregisterEvents);
+            DetourHooks = new List<Hook>()
+            {
+                ShapezShifter.SharpDetour.DetourHelper.CreatePostfixHook<GameSessionOrchestrator, ResearchManager.SerializedData, bool>(
+                    (orch, researchData, isNewGame) => orch.Init_3_2_EssentialManagers(researchData, isNewGame),
+                    RegisterEvents),
+                ShapezShifter.SharpDetour.DetourHelper.CreatePostfixHook<ResearchManager>(
+                    resManager => resManager.Dispose(),
+                    UnregisterEvents),
+            };
             // Following hooks are created because of crashes when receiving an item
             Expression<Action<HUDMilestoneSummaryDisplay>> onLevelChangedExpr = disp => disp.OnLevelChanged();
             MethodInfo runtimeMethod = ShapezShifter.SharpDetour.DetourHelper.GetRuntimeMethod(onLevelChangedExpr);
-            HudMilestoneReceiveFixHook = new Hook(runtimeMethod, new Action<Action<HUDMilestoneSummaryDisplay>, HUDMilestoneSummaryDisplay>(HudMilestoneReceiveFix));
+            DetourHooks.Add(new Hook(runtimeMethod, new Action<Action<HUDMilestoneSummaryDisplay>, HUDMilestoneSummaryDisplay>(HudReceiveTimeoutFix)));
             Expression<Action<HUDCompass>> updateShapePreviewMeshExpr = comp => comp.UpdateShapePreviewMesh();
             runtimeMethod = ShapezShifter.SharpDetour.DetourHelper.GetRuntimeMethod(updateShapePreviewMeshExpr);
-            HudCompassReceiveFixHook = new Hook(runtimeMethod, new Action<Action<HUDCompass>, HUDCompass>(HudCompassReceiveFix));
+            DetourHooks.Add(new Hook(runtimeMethod, new Action<Action<HUDCompass>, HUDCompass>(HudReceiveTimeoutFix)));
+            DetourHooks.Add(ShapezShifter.SharpDetour.DetourHelper.CreatePostfixHook<ResearchChunkLimitManager, ChunkLimitCurrency>(
+                manager => manager.ComputeCurrentChunkLimit(),
+                ExtendedComputeCurrentChunkLimit));
         }
 
         public void RegisterEvents(GameSessionOrchestrator orch, ResearchManager.SerializedData researchData, bool isNewGame)
@@ -43,7 +50,7 @@ namespace _2hapezipelago
             resManager.PlayerLevel.OnLevelChanged.TryUnregister(OperatorLevelChanged);
         }
 
-        public void HudMilestoneReceiveFix(Action<HUDMilestoneSummaryDisplay> orig, HUDMilestoneSummaryDisplay self)
+        public void HudReceiveTimeoutFix<TObject>(Action<TObject> orig, TObject self)
         {
             if (DateTimeOffset.Now.ToUnixTimeMilliseconds() - Mod?.ConHandler?.LastReceive >= 250)
             {
@@ -51,12 +58,11 @@ namespace _2hapezipelago
             }
         }
 
-        public void HudCompassReceiveFix(Action<HUDCompass> orig, HUDCompass self)
+        public ChunkLimitCurrency ExtendedComputeCurrentChunkLimit(ResearchChunkLimitManager self, ChunkLimitCurrency result)
         {
-            if (DateTimeOffset.Now.ToUnixTimeMilliseconds() - Mod?.ConHandler?.LastReceive >= 250)
-            {
-                orig(self);
-            }
+            var newResult = result + new ChunkLimitCurrency((Mod?.SaveHandler?.SaveData.RemotePlatforms ?? 0) * 2);
+            Mod?.Logger.Info?.Log($"[Debug] Computed chunk limit: {newResult.Amount} ({result.Amount} without remote)");
+            return newResult;
         }
 
         public void ResearchUnlocked(IResearchUpgrade upgrade)
@@ -127,18 +133,6 @@ namespace _2hapezipelago
                 var upgrade = GameHelper.Core.Research.Layout.GetUpgrade(upgradeId);
                 ResearchUnlocked(upgrade);
             }
-            
-        }
-
-        [Obsolete]
-        public void ReceiveReward(ISerializedResearchReward[] serializedRewards)
-        {
-            var rewardManager = GameHelper.Core.Research.RewardManager;
-            foreach (var serializedRweard in serializedRewards)
-            {
-                var reward = ResearchRewardFactory.Create(serializedRweard);
-                rewardManager.GrantReward(reward);
-            }
         }
 
         public void ReceiveReward(string remoteUpgradeId)
@@ -147,34 +141,41 @@ namespace _2hapezipelago
             var resManager = GameHelper.Core.Research;
             if (remoteUpgradeId.StartsWith("rp"))
             {
-                var serializedReward = new SerializedResearchRewardResearchPoints()
-                {
-                    Amount = int.Parse(remoteUpgradeId[2..])
-                };
-                resManager.RewardManager.GrantReward(ResearchRewardFactory.Create(serializedReward));
+                var before = resManager.PointStorage.Points.Amount;
+                resManager.PointStorage.Add(new ResearchPointCurrency(int.Parse(remoteUpgradeId[2..])));
+                Mod?.Logger.Info?.Log($"[Debug] Added research points: {before} -> {resManager.PointStorage.Points.Amount}");
+            }
+            else if (remoteUpgradeId.StartsWith("bp"))
+            {
+                var before = resManager.BlueprintCurrencyManager.BlueprintCurrency.FractionAmount;
+                resManager.BlueprintCurrencyManager.AddBlueprintCurrency(new BlueprintCurrency(int.Parse(remoteUpgradeId[2..]), 0));
+                Mod?.Logger.Info?.Log($"[Debug] Added blueprint points: {before} -> {resManager.BlueprintCurrencyManager.BlueprintCurrency.FractionAmount}");
             }
             else if (remoteUpgradeId.StartsWith("pl"))
             {
-                var serializedReward = new SerializedResearchRewardChunkLimit()
+                if (Mod != null && Mod.SaveHandler != null)
                 {
-                    Amount = int.Parse(remoteUpgradeId[2..])
-                };
-                resManager.RewardManager.GrantReward(ResearchRewardFactory.Create(serializedReward));
+                    var before = Mod.SaveHandler.SaveData.RemotePlatforms;
+                    Mod.SaveHandler.SaveData.RemotePlatforms += int.Parse(remoteUpgradeId[2..]);
+                    Mod?.Logger.Info?.Log($"[Debug] Added platforms: {before} -> {Mod.SaveHandler.SaveData.RemotePlatforms}");
+                    resManager.ChunkLimitManager.UpdateChunkLimit();
+                }
             }
             else
             {
                 var remoteUpgrade = resManager.Layout.GetUpgrade(new ResearchUpgradeId(remoteUpgradeId));
                 resManager.UnlockManager.TryUnlock(remoteUpgrade, true);
+                Mod?.Logger.Info?.Log($"[Debug] Research successfully unlocked");
             }
         }
 
         public void Dispose()
         {
             Mod = null;
-            RegisterHook.Dispose();
-            UnregisterHook.Dispose();
-            HudMilestoneReceiveFixHook.Dispose();
-            HudCompassReceiveFixHook.Dispose();
+            foreach (Hook detHook in DetourHooks)
+            {
+                detHook.Dispose();
+            }
         }
     }
 }
