@@ -1,10 +1,23 @@
 # Changelog
 
+## 1.0.3
+
+- Fixed platform points not being received from other players
+- Fixed various points received from other players being reapplied if dis- and reconnecting without closing the game
+- Fixed repeated use of the connect and reconnect command leading to multiple connections at the same time
+- Fixed information in the help command
+
+### Is this version compatible with older multiworld slots?
+Yes
+
 ## 1.0.2
 
 - Fixed crashes upon receiving a non-points item
 - Fixed the potential of writing an incorrect received items count to the save file
 - Fixed error when manually disconnecting
+
+### Is this version compatible with older multiworld slots?
+Yes
 
 ## 1.0.1
 

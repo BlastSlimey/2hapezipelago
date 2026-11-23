@@ -1,6 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Text;
 using Core.Factory;
 using ShapezShifter.Flow;
 using ShapezShifter.Hijack;
@@ -14,6 +12,7 @@ namespace _2hapezipelago
         public string PlayerName { get; set; }
         public string AddressPort { get; set; }
         public string Password { get; set; }
+        public int RemotePlatforms { get; set; }
     }
 
     public class SaveDataHandler : IDisposable
@@ -29,7 +28,8 @@ namespace _2hapezipelago
                 ReceivedItemsCount = 0,
                 PlayerName = "",
                 AddressPort = "",
-                Password = ""
+                Password = "",
+                RemotePlatforms = 0
             };
             AttachSaveDataFix(delegate ()
             {
@@ -38,7 +38,8 @@ namespace _2hapezipelago
                     ReceivedItemsCount = 0,
                     PlayerName = "",
                     AddressPort = "",
-                    Password = ""
+                    Password = "",
+                    RemotePlatforms = 0
                 };
             });
             Mod.RegisterToAfterSaveDataDeserialized<APModData>(SetSaveData);
