@@ -26,9 +26,20 @@ namespace _2hapezipelago
             Logger = Mod.Logger;
             new ModConsoleRewirer(mod).AddCommand(con =>
             {
-                con.Register("connect", new DebugConsole.StringOption("slotnameAddressPortPassword"), ctx =>
+                con.Register("connect", new DebugConsole.StringOption("slotnameAddressPort"), ctx =>
                 {
-                    if (CommandConnect(ctx))
+                    if (CommandConnect(ctx, ""))
+                    {
+                        var con2 = con is ModConsoleCommandWrapper wrapper ? wrapper.Console : con;
+                        if (con2 is DebugConsole deb)
+                        {
+                            deb.Savegame.CheatsEnabled = true;
+                        }
+                    }
+                });
+                con.Register("connectpassword", new DebugConsole.StringOption("slotnameAddressPort"), new DebugConsole.StringOption("password"), ctx =>
+                {
+                    if (CommandConnect(ctx, ctx.GetString(1)))
                     {
                         var con2 = con is ModConsoleCommandWrapper wrapper ? wrapper.Console : con;
                         if (con2 is DebugConsole deb)
@@ -46,7 +57,7 @@ namespace _2hapezipelago
                 orch => { Disconnect(); });
         }
 
-        private bool CommandConnect(DebugConsole.CommandContext ctx)
+        private bool CommandConnect(DebugConsole.CommandContext ctx, string password)
         {
             if (ctx.Options.Length != 1)
             {
@@ -54,19 +65,8 @@ namespace _2hapezipelago
                 return false;
             }
             var input = ctx.GetString(0);
-            var playerPassword = input[..input.IndexOf('@')];
-            string password, player;
-            if (playerPassword.Contains(':'))
-            {
-                player = playerPassword[..playerPassword.IndexOf(':')];
-                password = playerPassword[(playerPassword.IndexOf(':') + 1)..];
-            }
-            else
-            {
-                player = playerPassword;
-                password = "";
-            }
-            var addressPort = input[(input.IndexOf('@') + 1)..];
+            var player = input[..input.LastIndexOf('@')];
+            var addressPort = input[(input.LastIndexOf('@') + 1)..];
             this.Connect(player, addressPort, password, ctx);
             return true;
         }

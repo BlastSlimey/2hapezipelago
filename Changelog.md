@@ -6,6 +6,8 @@
 - Fixed `Fluid Miner + Extension` not being unlocked upon receiving
 - Fixed UI-related crashes during item receiving
 - Fixed crashes after reconnecting if new items were received while offline
+- Split the `connect` command into a variant with a password (`connectpassword`) and without a password (`connect`)
+- Tweaked `connect` command processing to allow more special characters
 
 ### Is this version compatible with older multiworld slots?
 No
