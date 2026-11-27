@@ -50,6 +50,14 @@
 			<HintPath>$(SPZ2_PATH)\Game.Core.Modding.dll</HintPath>
 			<Private>False</Private>
 		</Reference>
+		<Reference Include="Game.Core.Map.Model">
+			<HintPath>$(SPZ2_PATH)\Game.Core.Map.Model.dll</HintPath>
+			<Private>False</Private>
+		</Reference>
+		<Reference Include="Game.Core.Blueprint">
+			<HintPath>$(SPZ2_PATH)\Game.Core.Blueprint.dll</HintPath>
+			<Private>False</Private>
+		</Reference>
 		<Reference Include="Game.Orchestration">
 			<HintPath>$(SPZ2_PATH)\Game.Orchestration.dll</HintPath>
 			<Private>False</Private>
@@ -63,7 +71,7 @@
 			<Private>False</Private>
 		</Reference>
 		<Reference Include="ShapezShifter">
-			<HintPath>lib\ShapezShifter\ShapezShifter.dll</HintPath>
+			<HintPath>$(SPZ2_SHIFTER)</HintPath>
 			<Private>False</Private>
 		</Reference>
 		<Reference Include="MonoMod.RuntimeDetour">
