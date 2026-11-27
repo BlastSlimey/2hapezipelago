@@ -3,87 +3,13 @@ using System.Collections.Generic;
 using Archipelago.MultiClient.Net;
 using Archipelago.MultiClient.Net.Enums;
 using MonoMod.RuntimeDetour;
-using ShapezShifter.Flow;
-using ShapezShifter.Hijack;
+using static ShapezShifter.Flow.ModConsoleCommandsCreator;
 using ILogger = Core.Logging.ILogger;
 
 namespace _2hapezipelago
 {
     public class ConnectionHandler : IDisposable
     {
-        //Fix for the current problem of ShapezShifter appending a bad prefix to debug commands.
-        //Remove this once fixed.
-        private class ModConsoleRewirerFix : IConsoleRewirer, IRewirer, IEquatable<IRewirer>, IDisposable
-        {
-            public readonly APMod Mod;
-            public readonly List<Action<IDebugConsole>> ConsoleCommandsAddActions = new List<Action<IDebugConsole>>();
-            public readonly RewirerHandle Handle;
-
-            public ModConsoleRewirerFix(APMod mod)
-            {
-                Mod = mod;
-                Handle = GameRewirers.AddRewirer(this);
-            }
-
-            public void AddCommand(Action<IDebugConsole> command)
-            {
-                ConsoleCommandsAddActions.Add(command);
-            }
-
-            public void RegisterCommands(IDebugConsole console)
-            {
-                ModConsoleCommandWrapperFix obj = new ModConsoleCommandWrapperFix(Mod, console);
-                foreach (Action<IDebugConsole> consoleCommandsAddAction in ConsoleCommandsAddActions)
-                {
-                    consoleCommandsAddAction(obj);
-                }
-            }
-
-            public void Dispose()
-            {
-                GameRewirers.RemoveRewirer(Handle);
-            }
-        }
-
-        //Fix for the current problem of ShapezShifter appending a bad prefix to debug commands.
-        //Remove this once fixed.
-        private class ModConsoleCommandWrapperFix : IDebugConsole
-        {
-            public readonly IDebugConsole Console;
-            public readonly string ModPrefix;
-
-            public ModConsoleCommandWrapperFix(APMod mod, IDebugConsole console)
-            {
-                Console = console;
-                ModPrefix = mod.GetType().Assembly.GetName().Name;
-            }
-
-            public List<string> GetAutoCompletions(string start)
-            {
-                return Console.GetAutoCompletions(start);
-            }
-
-            public void ParseAndExecute(string command, Action<string> output)
-            {
-                Console.ParseAndExecute(command, output);
-            }
-
-            public void Register(string id, Action<DebugConsole.CommandContext> handler, bool isCheat = false)
-            {
-                Console.Register(ModPrefix + "." + id, handler, isCheat);
-            }
-
-            public void Register(string id, DebugConsole.ConsoleOption option0, Action<DebugConsole.CommandContext> handler, bool isCheat = false)
-            {
-                Console.Register(ModPrefix + "." + id, option0, handler, isCheat);
-            }
-
-            public void Register(string id, DebugConsole.ConsoleOption option0, DebugConsole.ConsoleOption option1, Action<DebugConsole.CommandContext> handler, bool isCheat = false)
-            {
-                Console.Register(ModPrefix + "." + id, option0, option1, handler, isCheat);
-            }
-        }
-
         public APMod? Mod;
         public ILogger Logger;
         public ArchipelagoSession? Session;
@@ -97,13 +23,13 @@ namespace _2hapezipelago
         {
             Mod = mod;
             Logger = Mod.Logger;
-            new ModConsoleRewirerFix(mod).AddCommand(con =>
+            new ModConsoleRewirer(mod).AddCommand(con =>
             {
                 con.Register("connect", new DebugConsole.StringOption("slotnameAddressPortPassword"), ctx =>
                 {
                     if (CommandConnect(ctx))
                     {
-                        var con2 = con is ModConsoleCommandsCreator.ModConsoleCommandWrapper wrapper ? wrapper.Console : con;
+                        var con2 = con is ModConsoleCommandWrapper wrapper ? wrapper.Console : con;
                         if (con2 is DebugConsole deb)
                         {
                             deb.Savegame.CheatsEnabled = true;
