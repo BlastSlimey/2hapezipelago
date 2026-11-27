@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq.Expressions;
 using System.Reflection;
+using System.Threading;
 using Game.Core.Blueprint;
 using Game.Core.Research;
 using MonoMod.RuntimeDetour;
@@ -14,6 +15,7 @@ namespace _2hapezipelago
         public APMod? Mod;
         public int OperatorLevel = 0;
         public List<Hook> DetourHooks;
+        public bool IsResyncing = false;
 
         public ResearchHandler(APMod mod)
         {
@@ -37,6 +39,7 @@ namespace _2hapezipelago
 
         public void ItemsProcessorHook(HUDCompass compass, InputDownstreamContext ctx)
         {
+            if (IsResyncing) return;
             var toProcess = Mod?.ConHandler?.ItemsToProcess;
             if (toProcess == null) return;
             while (toProcess.Count > 0)
@@ -139,12 +142,15 @@ namespace _2hapezipelago
         public void ResyncChecks()
         {
             Mod?.Logger.Info?.Log("[Debug] Resyncing operator levels");
+            IsResyncing = true;
+            Thread.Sleep(3000);
             OperatorLevelChanged();
             foreach (var upgradeId in GameHelper.Core.Research.Progress._ManuallyUnlockedUpgrades)
             {
                 var upgrade = GameHelper.Core.Research.Layout.GetUpgrade(upgradeId);
                 ResearchUnlocked(upgrade);
             }
+            IsResyncing = false;
         }
 
         public void ReceiveReward(string remoteUpgradeId)

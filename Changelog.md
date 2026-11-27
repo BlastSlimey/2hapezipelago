@@ -5,6 +5,7 @@
 - Updated item and location names to match the official 1.2.0 names
 - Fixed `Fluid Miner + Extension` not being unlocked upon receiving
 - Fixed UI-related crashes during item receiving
+- Fixed crashes after reconnecting if new items were received while offline
 
 ### Is this version compatible with older multiworld slots?
 No
