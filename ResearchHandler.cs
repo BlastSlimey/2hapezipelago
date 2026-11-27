@@ -17,7 +17,7 @@ namespace _2hapezipelago
         public ResearchHandler(APMod mod)
         {
             Mod = mod;
-            DetourHooks = new List<Hook>()
+            DetourHooks = new List<Hook>
             {
                 ShapezShifter.SharpDetour.DetourHelper.CreatePostfixHook<GameSessionOrchestrator, ResearchManager.SerializedData, bool>(
                     (orch, researchData, isNewGame) => orch.Init_3_2_EssentialManagers(researchData, isNewGame),
@@ -25,17 +25,28 @@ namespace _2hapezipelago
                 ShapezShifter.SharpDetour.DetourHelper.CreatePostfixHook<ResearchManager>(
                     resManager => resManager.Dispose(),
                     UnregisterEvents),
+                ShapezShifter.SharpDetour.DetourHelper.CreatePostfixHook<ResearchChunkLimitManager, ChunkLimitCurrency>(
+                    manager => manager.ComputeCurrentChunkLimit(),
+                    ExtendedComputeCurrentChunkLimit),
+                ShapezShifter.SharpDetour.DetourHelper.CreatePostfixHook<HUDCompass, InputDownstreamContext>(
+                    (compass, ctx) => compass.OnUpdate(ctx),
+                    ItemsProcessorHook)
             };
-            // Following hooks are created because of crashes when receiving an item
-            Expression<Action<HUDMilestoneSummaryDisplay>> onLevelChangedExpr = disp => disp.OnLevelChanged();
-            MethodInfo runtimeMethod = ShapezShifter.SharpDetour.DetourHelper.GetRuntimeMethod(onLevelChangedExpr);
-            DetourHooks.Add(new Hook(runtimeMethod, new Action<Action<HUDMilestoneSummaryDisplay>, HUDMilestoneSummaryDisplay>(HudReceiveTimeoutFix)));
-            Expression<Action<HUDCompass>> updateShapePreviewMeshExpr = comp => comp.UpdateShapePreviewMesh();
-            runtimeMethod = ShapezShifter.SharpDetour.DetourHelper.GetRuntimeMethod(updateShapePreviewMeshExpr);
-            DetourHooks.Add(new Hook(runtimeMethod, new Action<Action<HUDCompass>, HUDCompass>(HudReceiveTimeoutFix)));
-            DetourHooks.Add(ShapezShifter.SharpDetour.DetourHelper.CreatePostfixHook<ResearchChunkLimitManager, ChunkLimitCurrency>(
-                manager => manager.ComputeCurrentChunkLimit(),
-                ExtendedComputeCurrentChunkLimit));
+        }
+
+        public void ItemsProcessorHook(HUDCompass compass, InputDownstreamContext ctx)
+        {
+            var toProcess = Mod?.ConHandler?.ItemsToProcess;
+            if (toProcess == null) return;
+            while (toProcess.Count > 0)
+            {
+                if (Mod?.ConHandler?.ReceivedItemsCount == null) continue;
+                if (Mod?.ResHandler == null) continue;
+                var item = toProcess.Dequeue();
+                Mod?.ResHandler?.ReceiveReward(NameConverter.RemoteUpgrade(item));
+                if (Mod?.SaveHandler == null) continue;
+                Mod.SaveHandler.SaveData.ReceivedItemsCount = Mod.ConHandler.ReceivedItemsCount;
+            }
         }
 
         public void RegisterEvents(GameSessionOrchestrator orch, ResearchManager.SerializedData researchData, bool isNewGame)

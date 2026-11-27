@@ -18,6 +18,7 @@ namespace _2hapezipelago
         public Hook DisconnectOnDisposeHook;
         public SlotDataHandler? SlotDatHand;
         public long LastReceive = 0;
+        public Queue<string> ItemsToProcess = new Queue<string>();
 
         public ConnectionHandler(APMod mod)
         {
@@ -123,11 +124,12 @@ namespace _2hapezipelago
                     Logger.Info?.Log($"[Debug] Receiving item #{ReceivedItemsCount} ({Mod?.SaveHandler?.SaveData.ReceivedItemsCount} in save data)");
                     if (ReceivedItemsCount > Mod?.SaveHandler?.SaveData.ReceivedItemsCount)
                     {
-                        Mod?.ResHandler?.ReceiveReward(NameConverter.RemoteUpgrade(itemInfo.ItemName));
-                        if (SaveHandler != null)
-                        {
-                            SaveHandler.SaveData.ReceivedItemsCount = ReceivedItemsCount;
-                        }
+                        ItemsToProcess.Enqueue(itemInfo.ItemName);
+                        // Mod?.ResHandler?.ReceiveReward(NameConverter.RemoteUpgrade(itemInfo.ItemName));
+                        // if (SaveHandler != null)
+                        // {
+                        //     SaveHandler.SaveData.ReceivedItemsCount = ReceivedItemsCount;
+                        // }
                     }
                 }
                 catch (Exception e)
@@ -180,6 +182,7 @@ namespace _2hapezipelago
                 Logger.Info?.Log("Connection successful");
                 ctx.Output("Connection successful");
                 SlotDatHand = new SlotDataHandler(Success.SlotData, Mod, ctx);
+                ItemsToProcess.Clear();
                 Mod?.ResHandler?.ResyncChecks();
             }
         }
@@ -190,6 +193,7 @@ namespace _2hapezipelago
             Session = null;
             Success = null;
             ReceivedItemsCount = 0;
+            ItemsToProcess.Clear();
         }
 
         public void Dispose()
