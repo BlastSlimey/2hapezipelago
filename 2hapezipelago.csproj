@@ -4,6 +4,7 @@
 		<TargetFramework>netstandard2.1</TargetFramework>
 		<RootNamespace>_2hapezipelago</RootNamespace>
 		<Nullable>enable</Nullable>
+		<Version>1.1.0</Version>
 	</PropertyGroup>
 	
 	<PropertyGroup>
