@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq.Expressions;
 using System.Reflection;
+using Game.Core.Blueprint;
 using Game.Core.Research;
 using MonoMod.RuntimeDetour;
 using ShapezShifter.Kit;
@@ -153,7 +154,7 @@ namespace _2hapezipelago
             if (remoteUpgradeId.StartsWith("rp"))
             {
                 var before = resManager.PointStorage.Points.Amount;
-                resManager.PointStorage.Add(new ResearchPointCurrency(int.Parse(remoteUpgradeId[2..])));
+                resManager.PointStorage.Add(new ResearchPointCurrency(int.Parse(remoteUpgradeId[2..]) / 100));
                 Mod?.Logger.Info?.Log($"[Debug] Added research points: {before} -> {resManager.PointStorage.Points.Amount}");
             }
             else if (remoteUpgradeId.StartsWith("bp"))
@@ -167,7 +168,7 @@ namespace _2hapezipelago
                 if (Mod != null && Mod.SaveHandler != null)
                 {
                     var before = Mod.SaveHandler.SaveData.RemotePlatforms;
-                    Mod.SaveHandler.SaveData.RemotePlatforms += int.Parse(remoteUpgradeId[2..]);
+                    Mod.SaveHandler.SaveData.RemotePlatforms += int.Parse(remoteUpgradeId[2..]) * 2;
                     Mod?.Logger.Info?.Log($"[Debug] Added platforms: {before} -> {Mod.SaveHandler.SaveData.RemotePlatforms}");
                     resManager.ChunkLimitManager.UpdateChunkLimit();
                 }
