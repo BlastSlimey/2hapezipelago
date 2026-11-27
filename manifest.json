@@ -1,11 +1,11 @@
 ﻿{
-	"Version": "1.0.3",
+	"Version": "1.1.0",
 	"Description": "Adds compatibility with the Archipelago Multiworld Randomizer. You don't know what that is? Then see archipelago.gg",
 	"Author": "BlastSlimey",
 	"AffectsSaveGames": true,
 	"DisablesAchievements": true,
 	"SaveGameCompabilityRange": "*",
-	"GameVersionSupportRange": ">=1.0.0",
+	"GameVersionSupportRange": ">=1.2.0",
 	"Assemblies": [
 		"Archipelago.Multiclient.Net.dll",
 		"2hapezipelago.dll"
@@ -14,7 +14,7 @@
 		{
 			"ModId": "steam:3542611357",
 			"ModTitle": "Shapez Shifter",
-			"Version": "1.*"
+			"Version": "*"
 		}
 	],
 	"Conflicts": []

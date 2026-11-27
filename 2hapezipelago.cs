@@ -1,5 +1,4 @@
-﻿
-using ILogger = Core.Logging.ILogger;
+﻿using ILogger = Core.Logging.ILogger;
 
 namespace _2hapezipelago
 {

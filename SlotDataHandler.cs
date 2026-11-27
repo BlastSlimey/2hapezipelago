@@ -21,19 +21,19 @@ namespace _2hapezipelago
         {
             SlotData = slotData;
             JObject options = (JObject)slotData["options"];
-            JObject locAdjust = (JObject)options["location_adjustments"];
+            JObject? locAdjust = (JObject?)options["location_adjustments"];
             
-            if ((string)options["goal"] == "milestones")
+            if ((string?)options["goal"] == "milestones")
             {
                 Goal = Goaltype.Milestone;
             }
-            else if ((string)options["goal"] == "operator_levels")
+            else if ((string?)options["goal"] == "operator_levels")
             {
                 Goal = Goaltype.Operator;
             }
             else
             {
-                throw new Exception("Bad goal in slot data: " + (string)options["goal"]);
+                throw new Exception("Bad goal in slot data: " + (string?)options["goal"]);
             }
 
             MilestoneGoalNumber = (int)locAdjust["Milestones"];

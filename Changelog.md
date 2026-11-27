@@ -1,5 +1,14 @@
 # Changelog
 
+## 1.1.0
+
+- Updated item and location names to match the official 1.2.0 names
+- Fixed `Fluid Miner + Extension` not being unlocked upon receiving
+- Fixed UI-related crashes during item receiving
+
+### Is this version compatible with older multiworld slots?
+No
+
 ## 1.0.3
 
 - Fixed platform points not being received from other players
