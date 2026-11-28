@@ -9,7 +9,7 @@
 - Split the `connect` command into a variant with a password (`connectpassword`) and without a password (`connect`)
 - Tweaked `connect` command processing to allow more special characters
 
-### Is this version compatible with older multiworld slots?
+### Is this version compatible with older multiworld slots and save files?
 No
 
 ## 1.0.3
