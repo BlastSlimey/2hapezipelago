@@ -65,14 +65,6 @@ namespace _2hapezipelago
             resManager.PlayerLevel.OnLevelChanged.TryUnregister(OperatorLevelChanged);
         }
 
-        public void HudReceiveTimeoutFix<TObject>(Action<TObject> orig, TObject self)
-        {
-            if (DateTimeOffset.Now.ToUnixTimeMilliseconds() - Mod?.ConHandler?.LastReceive >= 250)
-            {
-                orig(self);
-            }
-        }
-
         public ChunkLimitCurrency ExtendedComputeCurrentChunkLimit(ResearchChunkLimitManager self, ChunkLimitCurrency result)
         {
             var newResult = result + new ChunkLimitCurrency((Mod?.SaveHandler?.SaveData.RemotePlatforms ?? 0) * 2);
@@ -92,7 +84,7 @@ namespace _2hapezipelago
             if (idParts[0].Equals("LocMilestone"))
             {
                 Mod?.Logger.Info?.Log("[Debug] Milestone detected");
-                int milestoneNum = Int32.Parse(idParts[1]);
+                int milestoneNum = int.Parse(idParts[1]);
                 for (int i = 1; i <= upgrade.Rewards.Count; i++)
                 {
                     Mod?.Logger.Info?.Log($"[Debug] Checking milestone {milestoneNum}-{i}");
@@ -105,10 +97,10 @@ namespace _2hapezipelago
                     Mod?.ConHandler?.Session?.SetGoalAchieved();
                 }
             }
-            else if (idParts[0].Equals("LocTask"))
+            else if (idParts[0].Equals("LocJob"))
             {
-                Mod?.Logger.Info?.Log("[Debug] Task detected");
-                Mod?.ConHandler?.CheckLocation(NameConverter.TaskLocation(Int32.Parse(idParts[1])+1, Int32.Parse(idParts[2])+1));
+                Mod?.Logger.Info?.Log("[Debug] Job detected");
+                Mod?.ConHandler?.CheckLocation(NameConverter.TaskLocation(int.Parse(idParts[1])+1, int.Parse(idParts[2])+1));
             }
             else
             {
@@ -174,7 +166,7 @@ namespace _2hapezipelago
                 if (Mod != null && Mod.SaveHandler != null)
                 {
                     var before = Mod.SaveHandler.SaveData.RemotePlatforms;
-                    Mod.SaveHandler.SaveData.RemotePlatforms += int.Parse(remoteUpgradeId[2..]) * 2;
+                    Mod.SaveHandler.SaveData.RemotePlatforms += int.Parse(remoteUpgradeId[2..]);
                     Mod?.Logger.Info?.Log($"[Debug] Added platforms: {before} -> {Mod.SaveHandler.SaveData.RemotePlatforms}");
                     resManager.ChunkLimitManager.UpdateChunkLimit();
                 }

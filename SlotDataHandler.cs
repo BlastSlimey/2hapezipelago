@@ -17,7 +17,7 @@ namespace _2hapezipelago
         public int MilestoneGoalNumber;
         public int OperatorGoalLevel;
 
-        public SlotDataHandler(Dictionary<string, object> slotData, APMod mod, DebugConsole.CommandContext ctx)
+        public SlotDataHandler(Dictionary<string, object> slotData)
         {
             SlotData = slotData;
             JObject options = (JObject)slotData["options"];
@@ -36,8 +36,8 @@ namespace _2hapezipelago
                 throw new Exception("Bad goal in slot data: " + (string?)options["goal"]);
             }
 
-            MilestoneGoalNumber = (int)locAdjust["Milestones"];
-            OperatorGoalLevel = (int)locAdjust["Operator lines"];
+            MilestoneGoalNumber = (int?)locAdjust?["Milestones"] ?? 3;
+            OperatorGoalLevel = (int?)locAdjust?["Operator lines"] ?? 0;
         }
     }
 }

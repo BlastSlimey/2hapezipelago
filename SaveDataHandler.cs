@@ -31,7 +31,7 @@ namespace _2hapezipelago
                 Password = "",
                 RemotePlatforms = 0
             };
-            AttachSaveDataFix(delegate ()
+            Mod.AttachSaveData(delegate ()
             {
                 return new APModData()
                 {
@@ -43,18 +43,6 @@ namespace _2hapezipelago
                 };
             });
             Mod.RegisterToAfterSaveDataDeserialized<APModData>(SetSaveData);
-        }
-
-        //Fix for the current problem of ShapezShifter storing the rewirer with a bad key in the dictionary.
-        //Remove this once fixed (and replace the "AttachSaveDataFix" with "Mod.AttachSaveData").
-        public void AttachSaveDataFix<T>(Func<T> defaultDataFactory) where T : new()
-        {
-            string text = Mod.ResolveId<T>();
-            string fileName = text + ".json";
-            ModSaveDataRewirer<T> modSaveDataRewirer = new ModSaveDataRewirer<T>(fileName, new LambdaFactory<T>(defaultDataFactory), Mod?.Logger);
-            RewirerHandle handle = GameRewirers.AddRewirer(modSaveDataRewirer);
-            ModSaveDataExtensions.ActiveRewirer value = new ModSaveDataExtensions.ActiveRewirer(handle, modSaveDataRewirer);
-            ModSaveDataExtensions.Rewirers.Add(text, value);
         }
 
         public void SetSaveData(APModData data)

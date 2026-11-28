@@ -181,7 +181,7 @@ namespace _2hapezipelago
                 Success = (LoginSuccessful)result;
                 Logger.Info?.Log("Connection successful");
                 ctx.Output("Connection successful");
-                SlotDatHand = new SlotDataHandler(Success.SlotData, Mod, ctx);
+                SlotDatHand = new SlotDataHandler(Success.SlotData);
                 ItemsToProcess.Clear();
                 Mod?.ResHandler?.ResyncChecks();
             }
